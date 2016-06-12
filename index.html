@@ -1,0 +1,138 @@
+<!DOCTYPE>
+
+<html>
+    <head>
+        <meta charset="utf-8"/>
+        <script src="//cdnjs.cloudflare.com/ajax/libs/jquery/2.2.4/jquery.min.js"></script>
+        <script src="//cdnjs.cloudflare.com/ajax/libs/angular.js/1.5.6/angular.min.js"></script>
+        <script src="//fast.wistia.net/assets/external/E-v1.js" async></script>
+        <script src="vendor/uploader/js/vendor/jquery.ui.widget.js"></script>
+        <script src="vendor/uploader/js/jquery.iframe-transport.js"></script>
+        <script src="vendor/uploader/js/jquery.fileupload.js"></script>
+
+        <style>
+            * {box-sizing: border-box;}
+
+            .upload-button {
+                position: relative;
+                padding: 5px 15px;
+                border-radius: 4px;
+                background: #337ab7;
+                color: white;
+                cursor: pointer;
+                overflow: hidden;
+            }
+
+            .upload-button[disabled] {
+                opacity: 0.5;
+                filter: alpha(opacity=0.5);
+            }
+
+            .upload-button input.upload-input {
+                position: absolute;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                cursor: pointer;
+                margin: 0;
+                padding: 0;
+                opacity: 0;
+                filter: alpha(opacity=0);
+            }
+        </style>
+    </head>
+
+
+    <body ng-app="app">
+        <div ng-controller="appCtrl">
+            <div style="display: table">
+                <div style="display: table-cell; vertical-align: middle;">
+                    <img style="width: 30px;" src='//zapier.cachefly.net/storage/services/31b8d7acde04569129edf1bd1bcd6c11.128x128.png' />
+                </div>
+
+                <div style="padding-left: 10px; display: table-cell; vertical-align: middle;">
+                    <h1 style="margin: 0">AngularJS Test</h1>
+                </div>
+            </div>
+
+            <wistia style="margin-top: 20px;" config="ctrl.wistiaConfig"></wistia>
+        </div>
+
+        <script>
+            var app = angular.module('app', []);
+
+            app.controller('appCtrl', [
+                '$scope',
+                function($scope) {
+                    var ctrl = $scope.ctrl = {
+                        wistiaConfig: {
+                            api_password: "41fc098ab35a8fcbc9f7e594240e689c1a68de36d4b43aa0a2cb947cb35c156e"
+                        }
+                    }
+                }
+            ]);
+
+            // Directive starts here! This should be my unique comment for this project.
+            app.directive('wistia', [
+                '$timeout','$sce',
+                function($timeout, $sce) {
+                    return {
+                        restrict: 'E',
+                        replace: true,
+                        template:
+                            "<div class='wistia-directive'>"+
+                                "<span class='upload-button'>"+
+                                    "<span>Upload</span>"+
+                                    "<input class='upload-input' type='file' name='files[]' multiple/>"+
+                                "</span>"+
+                                "<div class='progress' ng-if='ctrl.isUploading' style='margin-top: 20px; background: #f1f1f1; padding: 2px; border-radius: 4px; overflow: hidden;'>"+
+                                    "<div class='bar' ng-style='ctrl.barStyle'>uploading</div>"+
+                                "</div>"+
+                                "<div ng-if='result' style='margin-top: 20px'>"+
+                                    "<iframe ng-src='{{ctrl.wistiaUrl}}' allowtransparency='true' frameborder='0' scrolling='no' class='wistia_embed' name='wistia_embed' allowfullscreen mozallowfullscreen webkitallowfullscreen oallowfullscreen msallowfullscreen width='620' height='349'></iframe>"+
+                                "</div>"+
+                            "</div>",
+                        scope: {
+                            config: "="
+                        },
+                        link: function($scope, elem, attrs) {
+                            var ctrl = $scope.ctrl = {
+                                isUploading: false,
+                                barStyle: {
+                                    background: '#337ab7',
+                                    height: 'auto',
+                                    fontSize: '14px',
+                                    padding: '5px 10px',
+                                    width: '0%'
+                                }
+                            };
+
+                            $(elem).find('.upload-input').fileupload({
+                                url: 'https://upload.wistia.com',
+                                dataType: 'json',
+                                formData: $scope.config,
+                                add: function (e, data) {
+                                    $scope.$apply(function() { ctrl.isUploading = true; });
+                                    data.submit();
+                                },
+                                done: function (e, data) {
+                                    $scope.$apply(function() {
+                                        ctrl.isUploading = false;
+                                        ctrl.result = data.result;
+                                        ctrl.wistiaUrl = $sce.trustAsResourceUrl("//fast.wistia.net/embed/iframe/"+data.result.hashed_id);
+                                    });
+                                },
+                                progressall: function (e, data) {
+                                    var progress = parseInt(data.loaded / data.total * 100, 10);
+                                    console.log("progress = " + progress);
+                                    $scope.$apply(function() { ctrl.barStyle.width = progress+"%"; });
+                                }
+                            });
+                        }
+                    };
+                }
+            ])
+        </script>
+    </body>
+</html>
